@@ -1,5 +1,5 @@
 # Binaries
-modelvet
+/modelvet
 *.exe
 *.exe~
 *.dll
