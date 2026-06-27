@@ -1,0 +1,27 @@
+# Binaries
+modelvet
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Build output
+dist/
+/bin/
+
+# Test binaries
+*.test
+
+# Go workspace
+go.work.sum
+
+# Editor artifacts
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Fuzz corpus (keep testdata/fuzz/ dirs, not crash reports)
+testdata/fuzz/*/
