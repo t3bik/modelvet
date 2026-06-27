@@ -1,0 +1,10 @@
+{
+  "severity": "high",
+  "confidence": "medium",
+  "rules": {
+    "G115": {
+      "description": "Integer overflow conversion checks disabled for this codebase: all conversions are bounds-checked via safeio.Reader or explicit overflow-safe guards. See DESIGN.md §6.3",
+      "disabled": true
+    }
+  }
+}

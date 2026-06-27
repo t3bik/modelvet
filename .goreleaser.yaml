@@ -1,0 +1,50 @@
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+    - go test ./... -race
+
+builds:
+  - id: modelvet
+    main: ./cmd/modelvet
+    binary: modelvet
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w -X main.version={{.Version}} -X main.commit={{.ShortCommit}} -X main.date={{.Date}}
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - id: default
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format: tar.gz
+
+checksum:
+  name_template: "checksums.txt"
+
+sboms:
+  - artifacts: archive
+
+brews:
+  - name: modelvet
+    repository:
+      owner: t3bik
+      name: homebrew-tap
+    homepage: "https://github.com/t3bik/modelvet"
+    description: "Static security scanner for ML model artifacts (GGUF, safetensors, pickle) — no model load, no execution."
+    license: "MIT"
+    test: |
+      system "#{bin}/modelvet", "version"
+    install: |
+      bin.install "modelvet"
+
+release:
+  github:
+    owner: t3bik
+    name: modelvet
