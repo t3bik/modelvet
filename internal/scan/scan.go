@@ -10,6 +10,7 @@ import (
 
 	"github.com/t3bik/modelvet/internal/finding"
 	"github.com/t3bik/modelvet/internal/gguf"
+	"github.com/t3bik/modelvet/internal/numpy"
 	"github.com/t3bik/modelvet/internal/pickle"
 	"github.com/t3bik/modelvet/internal/safetensors"
 )
@@ -50,6 +51,7 @@ func NewEngine() *Engine {
 			finding.FormatGGUF:        gguf.New(),
 			finding.FormatSafetensors: safetensors.New(),
 			finding.FormatPickle:      pickle.New(),
+			finding.FormatNumpy:       numpy.New(),
 		},
 	}
 }

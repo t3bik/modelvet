@@ -4,17 +4,17 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Go 1.24+](https://img.shields.io/badge/Go-1.24%2B-blue)
 
-A static security scanner for machine-learning model artifacts. Inspects GGUF, safetensors, and Python pickle/PyTorch models for supply-chain and malicious-artifact risks **without ever loading, unpickling, or executing the model**.
+A static security scanner for machine-learning model artifacts. Inspects GGUF, safetensors, Python pickle/PyTorch, and NumPy (`.npy`/`.npz`) models for supply-chain and malicious-artifact risks **without ever loading, unpickling, or executing the model**.
 
 ## Why it matters
 
-Model files are code execution vectors. A compromised `.gguf`, `.safetensors`, or `.pt` file can exploit memory-safety bugs in model loaders, deliver backdoors via pickle RCE gadgets, or exhaust resources through integer-overflow or zip-bomb attacks. `modelvet` detects these risks **before** the file reaches a loader.
+Model files are code execution vectors. A compromised `.gguf`, `.safetensors`, `.pt`, or `.npy`/`.npz` file can exploit memory-safety bugs in model loaders, deliver backdoors via pickle RCE gadgets, or exhaust resources through integer-overflow or zip-bomb attacks. `modelvet` detects these risks **before** the file reaches a loader.
 
 Unlike model-introspection tools that load and inspect weights, `modelvet` reads only file metadata and structure using static analysis. The attack surface is bounded: no Python runtime, no model unpickling, no external dependencies.
 
 ## Features
 
-- **Formats**: GGUF (llama.cpp), safetensors (HuggingFace), Python pickle + PyTorch `.pt` zip container.
+- **Formats**: GGUF (llama.cpp), safetensors (HuggingFace), Python pickle + PyTorch `.pt` zip container, NumPy `.npy`/`.npz` (object-dtype arrays embed a pickle stream).
 - **Detection classes**:
   - Type-confusion bugs (bad enum codes, size/shape mismatches).
   - Integer-overflow paths (dimension product overflow, offset overflow).
@@ -138,7 +138,7 @@ Scanned: 1  Skipped: 0  Findings: 2
 
 ### Architecture
 
-The scanner orchestrates format detection and dispatch through three independent format parsers, each producing findings without loading the model.
+The scanner orchestrates format detection and dispatch through four independent format parsers, each producing findings without loading the model.
 
 ```mermaid
 graph TB
@@ -148,15 +148,19 @@ graph TB
     Choice -->|GGUF| GGUF["gguf.Scanner\n(metadata parser)"]
     Choice -->|safetensors| ST["safetensors.Scanner\n(JSON header parser)"]
     Choice -->|pickle| PKL["pickle.Scanner\n(opcode walk)"]
+    Choice -->|numpy| NPY["numpy.Scanner\n(.npy / .npz)"]
     Choice -->|unknown| Skip["skip file"]
+    NPY -->|object dtype = pickle| PKL
     
     GGUF --> SafeIO["safeio.Reader\n(bounded I/O)"]
     ST --> SafeIO
     PKL --> SafeIO
+    NPY --> SafeIO
     
     GGUF --> Find["finding.Finding\n(from Catalog)"]
     ST --> Find
     PKL --> Find
+    NPY --> Find
     
     Find --> Report["report.Writer\n(human/json/sarif)"]
     Report --> Exit["exit code\n(0/1/2)"]
@@ -186,7 +190,7 @@ Each format parser uses **`safeio.Reader`** — a bounded I/O wrapper that enfor
 - **Bounds check**: every read is validated against file size using **overflow-safe arithmetic** (`n > size-off`, not `off+n`).
 - **No unbounded reads**: every `.ReadAt()` or `.Bytes()` call specifies exact offsets and lengths.
 
-This defense applies uniformly across all three format parsers.
+This defense applies uniformly across all four format parsers.
 
 #### Pickle static analysis (no unpickling)
 

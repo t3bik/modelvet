@@ -99,3 +99,46 @@ func TestDetect_magicBeatsExtension(t *testing.T) {
 		t.Fatal("expected ByMagic=true")
 	}
 }
+
+func TestDetect_npyMagic(t *testing.T) {
+	// \x93NUMPY magic bytes → FormatNumpy, ByMagic=true, regardless of extension.
+	data := []byte{0x93, 'N', 'U', 'M', 'P', 'Y', 1, 0, 0, 0, 0, 0}
+	d := detect(data, "weights.bin") // wrong extension — magic wins
+	if d.Format != finding.FormatNumpy {
+		t.Fatalf("expected FormatNumpy by magic, got %v", d.Format)
+	}
+	if !d.ByMagic {
+		t.Fatal("expected ByMagic=true for .npy magic")
+	}
+}
+
+func TestDetect_npyExtension(t *testing.T) {
+	// .npy extension without magic (zeros) → FormatNumpy by extension.
+	data := make([]byte, 20)
+	d := detect(data, "array.npy")
+	if d.Format != finding.FormatNumpy {
+		t.Fatalf("expected FormatNumpy by .npy extension, got %v", d.Format)
+	}
+}
+
+func TestDetect_npzExtensionPKMagic(t *testing.T) {
+	// .npz with PK magic → FormatNumpy (not FormatPickle), ByMagic=true.
+	data := []byte{'P', 'K', 0x03, 0x04}
+	data = append(data, make([]byte, 20)...)
+	d := detect(data, "archive.npz")
+	if d.Format != finding.FormatNumpy {
+		t.Fatalf("expected FormatNumpy for .npz, got %v (should NOT route to pickle)", d.Format)
+	}
+	if !d.ByMagic {
+		t.Fatal("expected ByMagic=true (PK magic confirmed)")
+	}
+}
+
+func TestDetect_npzExtensionNoPKMagic(t *testing.T) {
+	// .npz extension but no PK magic → still FormatNumpy (extension only).
+	data := make([]byte, 20)
+	d := detect(data, "archive.npz")
+	if d.Format != finding.FormatNumpy {
+		t.Fatalf("expected FormatNumpy for .npz extension, got %v", d.Format)
+	}
+}

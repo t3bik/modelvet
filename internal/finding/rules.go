@@ -217,6 +217,36 @@ var Catalog = map[string]Rule{
 		Title:       "Zip container claims to be a model but contains no data.pkl entry",
 		Remediation: "A PK-magic (zip) file with a model extension contains no data.pkl entry. This may indicate a misidentified file, an empty container, or a tampered archive.",
 	},
+
+	// ── numpy rules ───────────────────────────────────────────────────────────
+	"NPY-OBJECT-001": {
+		ID:       "NPY-OBJECT-001",
+		Severity: High,
+		Title:    "numpy array uses object dtype; data region is deserialized via pickle on load",
+		Remediation: "An object-dtype numpy array embeds its data as a pickle stream. " +
+			"Loading this file with numpy will unpickle arbitrary data, enabling code execution. " +
+			"Do not load untrusted .npy/.npz files with object dtype. Inspect with modelvet --min-severity info.",
+	},
+	"NPY-HEADER-001": {
+		ID:       "NPY-HEADER-001",
+		Severity: Medium,
+		Title:    "Malformed, oversized, or garbage .npy header dict",
+		Remediation: "The .npy header is not a valid numpy header dict, or its declared length " +
+			"exceeds sanity limits. Reject the file; do not attempt to load it.",
+	},
+	"NPY-VERSION-001": {
+		ID:          "NPY-VERSION-001",
+		Severity:    Low,
+		Title:       "Unknown .npy format version",
+		Remediation: "Known .npy versions are 1.0, 2.0, and 3.0. An unrecognised major version may indicate a crafted or future-format file.",
+	},
+	"NPY-TRUNC-001": {
+		ID:       "NPY-TRUNC-001",
+		Severity: Medium,
+		Title:    "Truncated .npy file (header length exceeds file size or file too short)",
+		Remediation: "The declared header length extends beyond the file, or the file is too short " +
+			"to contain a complete .npy header. Reject; the file is incomplete or forged.",
+	},
 }
 
 // New builds a Finding from a catalog rule + per-occurrence detail/offset.
@@ -246,6 +276,8 @@ func formatForID(id string) Format {
 		return FormatSafetensors
 	case len(id) > 3 && id[:4] == "PKL-":
 		return FormatPickle
+	case len(id) > 3 && id[:4] == "NPY-":
+		return FormatNumpy
 	default:
 		return FormatUnknown
 	}

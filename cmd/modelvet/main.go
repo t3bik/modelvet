@@ -17,8 +17,11 @@ import (
 )
 
 // Build-time variables injected by goreleaser.
+// defaultVersion is the version shown when the binary is built without ldflags.
+const defaultVersion = "0.2.0"
+
 var (
-	version = "(devel)"
+	version = defaultVersion
 	commit  = "unknown"
 	date    = "unknown"
 )

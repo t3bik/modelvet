@@ -81,6 +81,7 @@ const (
 	FormatGGUF        Format = "gguf"
 	FormatSafetensors Format = "safetensors"
 	FormatPickle      Format = "pickle"
+	FormatNumpy       Format = "numpy"
 	FormatUnknown     Format = "unknown"
 )
 
